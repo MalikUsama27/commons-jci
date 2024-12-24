@@ -18,19 +18,19 @@
  package org.apache.commons.jci2.core;
 
  import java.io.File;
-
+ 
  import org.apache.commons.jci2.core.classes.ExtendedDump;
  import org.apache.commons.jci2.core.classes.SimpleDump;
  import org.apache.commons.jci2.core.listeners.ReloadingListener;
  import org.apache.commons.jci2.fam.monitor.FilesystemAlterationMonitor;
  import org.apache.commons.logging.Log;
  import org.apache.commons.logging.LogFactory;
- import org.junit.Before;
- import org.junit.Test;
+
  
- 
+
  /**
-  * Tests the ReloadingClassLoader for class reloading and event handling.
+  *
+  * @author tcurdt
   */
  public final class ReloadingClassLoaderTestCase extends AbstractTestCase {
  
@@ -48,13 +48,13 @@
          clazzSimple1 = SimpleDump.dump("Simple1");
          clazzSimple2 = SimpleDump.dump("Simple2");
          clazzExtended = ExtendedDump.dump();
-         assertTrue("Simple1 class content is empty", clazzSimple1.length > 0);
-         assertTrue("Simple2 class content is empty", clazzSimple2.length > 0);
-         assertTrue("Extended class content is empty", clazzExtended.length > 0);
+         assertTrue(clazzSimple1.length > 0);
+         assertTrue(clazzSimple2.length > 0);
+         assertTrue(clazzExtended.length > 0);
      }
  
-     @Before
-     public void setUp() throws Exception {
+     @Override
+     protected void setUp() throws Exception {
          super.setUp();
  
          classloader = new ReloadingClassLoader(this.getClass().getClassLoader());
@@ -67,11 +67,11 @@
          fam.start();
      }
  
-     @Test
+
      public void testCreate() throws Exception {
          listener.waitForFirstCheck();
  
-         log.debug("Creating class");
+         log.debug("creating class");
          writeFile("jci2/Simple.class", clazzSimple1);
          listener.waitForCheck();
  
@@ -79,18 +79,18 @@
          assertEquals("Simple1", simple.toString());
      }
  
-     @Test
+
      public void testChange() throws Exception {
          listener.waitForFirstCheck();
  
-         log.debug("Creating class");
+         log.debug("creating class");
          writeFile("jci2/Simple.class", clazzSimple1);
          listener.waitForCheck();
  
          final Object simple1 = classloader.loadClass("jci2.Simple").getConstructor().newInstance();
          assertEquals("Simple1", simple1.toString());
  
-         log.debug("Changing class");
+         log.debug("changing class");
          writeFile("jci2/Simple.class", clazzSimple2);
          listener.waitForEvent();
  
@@ -98,34 +98,33 @@
          assertEquals("Simple2", simple2.toString());
      }
  
-     @Test
+
      public void testDelete() throws Exception {
          listener.waitForFirstCheck();
  
-         log.debug("Creating class");
+         log.debug("creating class");
          writeFile("jci2/Simple.class", clazzSimple1);
          listener.waitForCheck();
  
          final Object simple = classloader.loadClass("jci2.Simple").getConstructor().newInstance();
          assertEquals("Simple1", simple.toString());
  
-         log.debug("Deleting class");
-         assertTrue("Failed to delete class file", new File(directory, "jci2/Simple.class").delete());
+         log.debug("deleting class");
+         assertTrue(new File(directory, "jci2/Simple.class").delete());
          listener.waitForEvent();
  
          try {
              classloader.loadClass("jci2.Simple").getConstructor().newInstance();
-             fail("Class should not be found after deletion");
+             fail();
          } catch (final ClassNotFoundException e) {
              assertEquals("jci2.Simple", e.getMessage());
          }
      }
  
-     @Test
      public void testDeleteDependency() throws Exception {
          listener.waitForFirstCheck();
  
-         log.debug("Creating classes");
+         log.debug("creating classes");
          writeFile("jci2/Simple.class", clazzSimple1);
          writeFile("jci2/Extended.class", clazzExtended);
          listener.waitForCheck();
@@ -136,35 +135,35 @@
          final Object extended = classloader.loadClass("jci2.Extended").getConstructor().newInstance();
          assertEquals("Extended:Simple1", extended.toString());
  
-         log.debug("Deleting class dependency");
-         assertTrue("Failed to delete class file", new File(directory, "jci2/Simple.class").delete());
+         log.debug("deleting class dependency");
+         assertTrue(new File(directory, "jci2/Simple.class").delete());
          listener.waitForEvent();
  
          try {
              classloader.loadClass("jci2.Extended").getConstructor().newInstance();
-             fail("Extended class should fail to load after Simple class is deleted");
+             fail();
          } catch (final NoClassDefFoundError e) {
              assertEquals("jci2/Simple", e.getMessage());
          }
      }
  
-     @Test
+
      public void testClassNotFound() {
          try {
              classloader.loadClass("bla");
-             fail("Class 'bla' should not be found");
+             fail();
          } catch (final ClassNotFoundException e) {
-             // Expected behavior
-         }
+   
+        }
      }
  
-     @Test
+
      public void testDelegation() {
          classloader.clearAssertionStatus();
-         classloader.setClassAssertionStatus("org.apache.commons.jci2.core.core.ReloadingClassLoader", true);
+          classloader.setClassAssertionStatus("org.apache.commons.jci2.core.core.ReloadingClassLoader", true);
          classloader.setDefaultAssertionStatus(false);
          classloader.setPackageAssertionStatus("org.apache.commons.jci2.core.core", true);
-         // FIXME: compare with delegation (assert that class delegation works)
+         // FIXME: compare with delegation
      }
  
      @Override
@@ -173,5 +172,5 @@
          fam.stop();
          super.tearDown();
      }
- }
  
+ }
