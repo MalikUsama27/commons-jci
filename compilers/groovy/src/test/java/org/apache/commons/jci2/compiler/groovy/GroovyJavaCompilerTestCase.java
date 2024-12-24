@@ -38,12 +38,12 @@ public final class GroovyJavaCompilerTestCase extends AbstractCompilerTestCase {
 
     @Override
     public void testInternalClassCompile() throws Exception {
-        // FIXME: inner classes not supported in groovy?
+
     }
 
 	@Override
     public void testCrossReferenceCompilation() throws Exception {
-		// FIXME: static imports not supported in groovy?
-	}
+
+    }
 
 }
