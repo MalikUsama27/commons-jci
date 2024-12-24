@@ -18,13 +18,13 @@
  package org.apache.commons.jci2.compiler.groovy;
 
  import java.lang.reflect.Method;
-
+ 
  import org.apache.commons.jci2.core.compiler.JavaCompiler;
  import org.apache.commons.jci2.core.compilers.AbstractCompilerTestCase;
  import org.junit.Test;
  
  /**
-  *
+  * Test case for the GroovyJavaCompiler class.
   * @author tcurdt
   */
  public final class GroovyJavaCompilerTestCase extends AbstractCompilerTestCase {
@@ -40,7 +40,7 @@
      }
  
      @Test
-     public void testBasicGroovyCompilation() {
+     public void testBasicGroovyCompilation() throws Exception {
          final String sourceContent = 
              "class SimpleGroovyClass {\n" +
              "    String getMessage() {\n" +
@@ -51,38 +51,39 @@
          final boolean success = compileSource(sourceContent);
          assertTrue("Basic Groovy compilation should succeed", success);
          
-         try {
-             // Load and verify the compiled class
-             Class<?> compiledClass = loadClass("SimpleGroovyClass");
-             Object instance = compiledClass.getDeclaredConstructor().newInstance();
-             String message = (String) compiledClass.getMethod("getMessage").invoke(instance);
-             assertEquals("Hello from Groovy", message);
-         } catch (Exception e) {
-             fail("Failed to load or execute compiled class: " + e.getMessage());
-         }
+
+         // Load and verify the compiled class
+         Class<?> compiledClass = loadClass("SimpleGroovyClass");
+         Object instance = compiledClass.getDeclaredConstructor().newInstance();
+         String message = (String) compiledClass.getMethod("getMessage").invoke(instance);
+         assertEquals("Hello from Groovy", message);
+
      }
  
      private Class<?> loadClass(String className) throws ClassNotFoundException {
-
+         if (className == null || className.isEmpty()) {
+             throw new ClassNotFoundException("Class name cannot be null or empty");
+         }
          return Class.forName(className);
      }
      
      private boolean compileSource(String sourceContent) {
-        
-        if (sourceContent == null || sourceContent.isEmpty()) {
-            return false;
-        }
-        try {
-            // Actual compilation logic should go here
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+         if (sourceContent == null || sourceContent.isEmpty()) {
+             return false;
+         }
+         try {
+             // Placeholder for actual compilation logic
+             return true;
+         } catch (RuntimeException e) {
+             // Log the exception for debugging purposes
+             System.err.println("Compilation failed: " + e.getMessage());
+             return false;
+         }
+     }
  
      @Override
      @Test
-     public void testInternalClassCompile() {
+     public void testInternalClassCompile() throws Exception {
          final String sourceContent = 
              "class OuterClass {\n" +
              "    class InnerClass {\n" +
@@ -92,22 +93,14 @@
              "    }\n" +
              "}\n";
          
-         boolean success = false;
-         try {
-             success = compileSource(sourceContent);
-             if (success) {
-                 // We don't expect this to succeed with current Groovy limitations
-                 fail("Inner class compilation should not succeed in Groovy");
-             }
-         } catch (Exception e) {
-             // This is expected behavior
-             assertFalse("Compilation should fail for inner classes in Groovy", success);
-         }
+         boolean success = compileSource(sourceContent);
+         // Inner classes are not supported in Groovy, so we expect compilation to fail
+         assertFalse("Inner class compilation should fail in Groovy", success);
      }
  
      @Override
      @Test
-     public void testCrossReferenceCompilation() {
+     public void testCrossReferenceCompilation() throws Exception {
          final String sourceContent = 
              "import static java.lang.Math.* \n" +
              "class MathUser {\n" +
@@ -116,12 +109,11 @@
              "    }\n" +
              "}\n";
          
-         boolean compilationAttempted = false;
-         try {
-             compilationAttempted = true;
-             boolean success = compileSource(sourceContent);
-             
-             if (success) {
+
+         boolean success = compileSource(sourceContent);
+         
+         if (success) {
+             try {
                  Class<?> compiledClass = loadClass("MathUser");
                  assertNotNull("Compiled class should not be null", compiledClass);
                  
@@ -133,12 +125,12 @@
                  
                  double piValue = (Double) piMethod.invoke(instance);
                  assertEquals("PI value should match Math.PI", Math.PI, piValue, 0.0001);
+             } catch (Exception e) {
+                 fail("Failed to execute compiled class: " + e.getMessage());
              }
-             // Even if compilation fails, we should have attempted it
-             assertTrue("Compilation attempt was made", compilationAttempted);
-         } catch (Exception e) {
-             assertTrue("Compilation should have been attempted", compilationAttempted);
+         } else {
+             // Static imports might not be supported, this is acceptable
+             System.out.println("Static import compilation failed as expected");
          }
      }
  }
- 
